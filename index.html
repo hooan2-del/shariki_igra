@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Лопай шарики - Уровни!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            background-size: 400% 400%;
+            animation: gradient 6s ease infinite;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            touch-action: manipulation;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #score-board {
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 2.2rem;
+            font-weight: bold;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+            z-index: 10;
+            pointer-events: none;
+            letter-spacing: 2px;
+        }
+
+        #score-board span {
+            background: rgba(0,0,0,0.4);
+            padding: 5px 25px;
+            border-radius: 60px;
+            backdrop-filter: blur(4px);
+            display: inline-block;
+        }
+
+        #level-info {
+            position: absolute;
+            top: 80px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #level-info span {
+            background: rgba(0,0,0,0.4);
+            padding: 8px 20px;
+            border-radius: 30px;
+            backdrop-filter: blur(4px);
+            display: inline-block;
+        }
+
+        #task-info {
+            position: absolute;
+            top: 130px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #ffdd57;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+            pointer-events: none;
+            transition: all 0.3s;
+        }
+
+        #task-info span {
+            background: rgba(0,0,0,0.6);
+            padding: 6px 18px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            display: inline-block;
+        }
+
+        #game-area {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        .ball {
+            position: absolute;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: inset -5px -5px 15px rgba(0,0,0,0.15), 
+                        inset 5px 5px 15px rgba(255,255,255,0.3),
+                        0 8px 20px rgba(0,0,0,0.25);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: float 1.8s ease-in-out infinite alternate;
+            transition: transform 0.1s ease;
+            will-change: transform;
+            font-size: 3rem;
+            line-height: 1;
+            background: radial-gradient(circle at 30% 30%, #ffffffcc, #ffd966);
+            border: 3px solid rgba(255,255,255,0.6);
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(-2deg); }
+            100% { transform: translateY(-18px) rotate(2deg); }
+        }
+
+        .ball-pop {
+            animation: popAnim 0.3s forwards !important;
+        }
+
+        @keyframes popAnim {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.8); opacity: 0; }
+        }
+
+        .ball-highlight {
+            animation: highlight 0.5s ease-in-out 3 !important;
+        }
+
+        @keyframes highlight {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px 15px rgba(255, 215, 0, 0.5); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            z-index: 20;
+            padding: 0 20px;
+            flex-wrap: wrap;
+        }
+
+        #controls button {
+            background: rgba(255,255,255,0.85);
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            border: 2px solid white;
+            transition: 0.2s;
+            touch-action: manipulation;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        #controls button:active {
+            transform: scale(0.85);
+        }
+
+        #restart-btn:active { background: #ffdd57; }
+
+        .hidden { display: none !important; }
+
+        #hint {
+            position: absolute;
+            bottom: 85px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 1rem;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0.7;
+            font-weight: bold;
+        }
+
+        #level-up-animation {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffdd57;
+            font-size: 4rem;
+            font-weight: bold;
+            text-shadow: 4px 4px 10px rgba(0,0,0,0.8);
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #level-up-animation.show {
+            opacity: 1;
+            animation: levelUpPop 1.5s forwards;
+        }
+
+        @keyframes levelUpPop {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            30% { transform: translate(-50%, -50%) scale(1.5); opacity: 1; }
+            70% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        /* Прогресс-бар уровня */
+        #progress-bar {
+            position: absolute;
+            bottom: 85px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 15;
+            backdrop-filter: blur(4px);
+        }
+
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffdd57, #ff6b6b);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        #progress-text {
+            position: absolute;
+            bottom: 98px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        @media (max-width: 600px) {
+            #score-board { font-size: 1.8rem; top: 10px; }
+            #level-info { font-size: 1rem; top: 65px; }
+            #level-info span { padding: 4px 15px; }
+            #task-info { font-size: 0.9rem; top: 105px; }
+            #task-info span { padding: 4px 12px; }
+            #controls button { padding: 10px 16px; font-size: 0.9rem; }
+            #hint { font-size: 0.85rem; bottom: 75px; }
+            #level-up-animation { font-size: 2.5rem; }
+            #progress-bar { width: 150px; bottom: 75px; }
+            #progress-text { bottom: 88px; font-size: 0.7rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="score-board">
+        <span>🎈 <span id="score">0</span></span>
+    </div>
+
+    <div id="level-info">
+        <span>🏆 Уровень <span id="level">1</span></span>
+    </div>
+
+    <div id="task-info">
+        <span>📋 <span id="task-text">Лопни 5 шариков</span></span>
+    </div>
+
+    <div id="game-area"></div>
+
+    <div id="hint">👆 Топай по шарикам!</div>
+
+    <div id="level-up-animation">🎉 УРОВЕНЬ ПРОЙДЕН! 🎉</div>
+
+    <div id="progress-text"><span id="progress-label">0%</span></div>
+    <div id="progress-bar">
+        <div id="progress-fill"></div>
+    </div>
+
+    <div id="controls">
+        <button id="restart-btn">🔄 Начать заново</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- ЭЛЕМЕНТЫ ---
+            const gameArea = document.getElementById('game-area');
+            const scoreSpan = document.getElementById('score');
+            const levelSpan = document.getElementById('level');
+            const taskText = document.getElementById('task-text');
+            const restartBtn = document.getElementById('restart-btn');
+            const levelUpAnimation = document.getElementById('level-up-animation');
+            const progressFill = document.getElementById('progress-fill');
+            const progressLabel = document.getElementById('progress-label');
+
+            let score = 0;
+            let ballCount = 0;
+            let currentLevel = 1;
+            let maxBalls = 14;
+            let levelCompleted = false;
+            let levelTransitionTimeout = null;
+
+            // --- УРОВНИ И ЗАДАНИЯ ---
+            const LEVELS = [
+                { // Уровень 1
+                    task: 'Лопни 5 шариков',
+                    target: 5,
+                    maxBalls: 10,
+                    spawnSpeed: 4000,
+                    popSound: true
+                },
+                { // Уровень 2
+                    task: 'Лопни 10 шариков',
+                    target: 10,
+                    maxBalls: 12,
+                    spawnSpeed: 3500,
+                    popSound: true
+                },
+                { // Уровень 3
+                    task: 'Лопни 15 шариков',
+                    target: 15,
+                    maxBalls: 14,
+                    spawnSpeed: 3000,
+                    popSound: true
+                },
+                { // Уровень 4
+                    task: 'Лопни 20 шариков за 30 секунд!',
+                    target: 20,
+                    maxBalls: 15,
+                    spawnSpeed: 2500,
+                    popSound: true,
+                    timeLimit: 30
+                },
+                { // Уровень 5
+                    task: 'Лопни 25 шариков',
+                    target: 25,
+                    maxBalls: 16,
+                    spawnSpeed: 2200,
+                    popSound: true
+                },
+                { // Уровень 6
+                    task: 'Лопни 30 шариков за 25 секунд!',
+                    target: 30,
+                    maxBalls: 18,
+                    spawnSpeed: 1800,
+                    popSound: true,
+                    timeLimit: 25
+                },
+                { // Уровень 7
+                    task: 'Лопни 40 шариков',
+                    target: 40,
+                    maxBalls: 20,
+                    spawnSpeed: 1500,
+                    popSound: true
+                },
+                { // Уровень 8
+                    task: 'Лопни 50 шариков за 20 секунд!',
+                    target: 50,
+                    maxBalls: 22,
+                    spawnSpeed: 1200,
+                    popSound: true,
+                    timeLimit: 20
+                },
+                { // Уровень 9
+                    task: 'Лопни 60 шариков!',
+                    target: 60,
+                    maxBalls: 25,
+                    spawnSpeed: 1000,
+                    popSound: true
+                },
+                { // Уровень 10
+                    task: 'ФИНАЛ! Лопни 75 шариков!',
+                    target: 75,
+                    maxBalls: 30,
+                    spawnSpeed: 800,
+                    popSound: true
+                }
+            ];
+
+            let currentLevelData = null;
+            let spawnInterval = null;
+            let timerInterval = null;
+            let timeLeft = 0;
+            let isTimerActive = false;
+
+            // --- Звук "ХЛОП" ---
+            function playPopSound() {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.frequency.value = 1200 + Math.random() * 400;
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.12);
+                } catch (e) {}
+            }
+
+            // --- ОБНОВЛЕНИЕ ПРОГРЕССА ---
+            function updateProgress() {
+                if (currentLevelData) {
+                    const progress = Math.min((score / currentLevelData.target) * 100, 100);
+                    progressFill.style.width = progress + '%';
+                    progressLabel.textContent = Math.round(progress) + '%';
+                }
+            }
+
+            // --- СОЗДАНИЕ ШАРИКА ---
+            function createBall() {
+                if (ballCount >= maxBalls || levelCompleted) return;
+
+                const ball = document.createElement('div');
+                ball.className = 'ball';
+
+                const size = 70 + Math.random() * 50;
+                ball.style.width = size + 'px';
+                ball.style.height = size + 'px';
+
+                const characters = ['🐱', '🐶', '🐻', '🐼', '🐸', '🐵', '🦊', '🐰', '🐨', '🐧', '🐭', '🐹', '🐮', '🐷', '🦝', '🐺', '🦄', '🐉', '⭐', '🚗', '🚀', '🎈'];
+                const char = characters[Math.floor(Math.random() * characters.length)];
+                ball.textContent = char;
+                ball.style.fontSize = (size * 0.55) + 'px';
+
+                const hue = Math.floor(Math.random() * 360);
+                ball.style.background = `radial-gradient(circle at 30% 30%, hsl(${hue}, 80%, 85%), hsl(${hue}, 70%, 60%))`;
+                ball.style.borderColor = `hsl(${hue}, 60%, 40%)`;
+
+                const maxX = window.innerWidth - size - 10;
+                const maxY = window.innerHeight - size - 150;
+
+                let x, y;
+                let attempts = 0;
+                do {
+                    x = Math.random() * maxX;
+                    y = Math.random() * maxY;
+                    attempts++;
+                } while (y < 150 && attempts < 20);
+
+                ball.style.left = x + 'px';
+                ball.style.top = y + 'px';
+
+                const delay = Math.random() * 1.5;
+                ball.style.animationDelay = delay + 's';
+                ball.style.animationDuration = (1.6 + Math.random() * 0.8) + 's';
+
+                function popHandler(e) {
+                    e.preventDefault();
+                    if (levelCompleted) return;
+                    
+                    ball.removeEventListener('click', popHandler);
+                    ball.removeEventListener('touchstart', popHandler);
+
+                    if (currentLevelData.popSound) {
+                        playPopSound();
+                    }
+                    ball.classList.add('ball-pop');
+
+                    score++;
+                    scoreSpan.textContent = score;
+                    ballCount--;
+                    updateProgress();
+
+                    // Проверяем выполнение задания
+                    if (score >= currentLevelData.target && !levelCompleted) {
+                        completeLevel();
+                    }
+
+                    setTimeout(() => {
+                        if (ball.parentNode) {
+                            ball.parentNode.removeChild(ball);
+                        }
+                        setTimeout(() => {
+                            if (ballCount < maxBalls && !levelCompleted) {
+                                createBall();
+                            }
+                        }, 300);
+                    }, 300);
+                }
+
+                ball.addEventListener('touchstart', popHandler, { passive: false });
+                ball.addEventListener('click', popHandler);
+
+                gameArea.appendChild(ball);
+                ballCount++;
+            }
+
+            // --- ЗАПОЛНЕНИЕ ШАРИКАМИ ---
+            function fillBalls() {
+                const existing = document.querySelectorAll('.ball');
+                existing.forEach(b => b.remove());
+                ballCount = 0;
+                const count = Math.min(currentLevelData.maxBalls, Math.floor(currentLevelData.target / 2) + 2);
+                for (let i = 0; i < Math.min(count, currentLevelData.maxBalls); i++) {
+                    setTimeout(() => createBall(), i * 150);
+                }
+            }
+
+            // --- ЗАВЕРШЕНИЕ УРОВНЯ ---
+            function completeLevel() {
+                if (levelCompleted) return;
+                levelCompleted = true;
+                
+                if (spawnInterval) {
+                    clearInterval(spawnInterval);
+                    spawnInterval = null;
+                }
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    isTimerActive = false;
+                }
+
+                levelUpAnimation.classList.remove('show');
+                void levelUpAnimation.offsetWidth;
+                levelUpAnimation.classList.add('show');
+
+                taskText.textContent = '✅ Уровень пройден!';
+                taskText.style.color = '#7dff7d';
+
+                // Подсвечиваем все шарики
+                document.querySelectorAll('.ball').forEach(b => {
+                    b.classList.add('ball-highlight');
+                });
+
+                // Автоматический переход на следующий уровень через 1.5 секунды
+                if (levelTransitionTimeout) clearTimeout(levelTransitionTimeout);
+                levelTransitionTimeout = setTimeout(() => {
+                    levelUpAnimation.classList.remove('show');
+                    nextLevel();
+                }, 1500);
+            }
+
+            // --- ПЕРЕХОД НА СЛЕДУЮЩИЙ УРОВЕНЬ ---
+            function nextLevel() {
+                if (levelTransitionTimeout) {
+                    clearTimeout(levelTransitionTimeout);
+                    levelTransitionTimeout = null;
+                }
+                
+                if (currentLevel < LEVELS.length) {
+                    loadLevel(currentLevel + 1);
+                } else {
+                    // Все уровни пройдены
+                    taskText.textContent = '🎊 ПОЗДРАВЛЯЮ! ТЫ ПРОШЕЛ ВСЕ УРОВНИ! 🎊';
+                    taskText.style.color = '#ffdd57';
+                    document.querySelectorAll('.ball').forEach(b => b.remove());
+                    progressFill.style.width = '100%';
+                    progressLabel.textContent = '100%';
+                }
+            }
+
+            // --- ЗАГРУЗКА УРОВНЯ ---
+            function loadLevel(levelIndex) {
+                levelCompleted = false;
+                taskText.style.color = '#ffdd57';
+                progressFill.style.width = '0%';
+                progressLabel.textContent = '0%';
+                
+                if (spawnInterval) {
+                    clearInterval(spawnInterval);
+                    spawnInterval = null;
+                }
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    isTimerActive = false;
+                }
+                if (levelTransitionTimeout) {
+                    clearTimeout(levelTransitionTimeout);
+                    levelTransitionTimeout = null;
+                }
+
+                currentLevel = Math.min(levelIndex, LEVELS.length);
+                currentLevelData = LEVELS[currentLevel - 1];
+                
+                levelSpan.textContent = currentLevel;
+                taskText.textContent = currentLevelData.task;
+                maxBalls = currentLevelData.maxBalls;
+                
+                score = 0;
+                scoreSpan.textContent = '0';
+                
+                // Удаляем все шарики
+                document.querySelectorAll('.ball').forEach(b => b.remove());
+                ballCount = 0;
+
+                // Заполняем шариками
+                setTimeout(() => {
+                    fillBalls();
+                    
+                    // Запускаем спавн
+                    if (spawnInterval) clearInterval(spawnInterval);
+                    spawnInterval = setInterval(() => {
+                        if (ballCount < maxBalls && !levelCompleted) {
+                            createBall();
+                        }
+                    }, currentLevelData.spawnSpeed);
+
+                    // Если есть таймер
+                    if (currentLevelData.timeLimit) {
+                        timeLeft = currentLevelData.timeLimit;
+                        isTimerActive = true;
+                        taskText.textContent = `⏱ ${currentLevelData.task} (осталось ${timeLeft}с)`;
+                        
+                        if (timerInterval) clearInterval(timerInterval);
+                        timerInterval = setInterval(() => {
+                            timeLeft--;
+                            if (timeLeft > 0 && !levelCompleted) {
+                                taskText.textContent = `⏱ ${currentLevelData.task} (осталось ${timeLeft}с)`;
+                            } else if (timeLeft <= 0 && !levelCompleted) {
+                                // Время вышло
+                                clearInterval(timerInterval);
+                                timerInterval = null;
+                                isTimerActive = false;
+                                taskText.textContent = '⏰ Время вышло!';
+                                taskText.style.color = '#ff6b6b';
+                                
+                                // Перезагружаем уровень через 1.5 секунды
+                                setTimeout(() => {
+                                    if (!levelCompleted) {
+                                        loadLevel(currentLevel);
+                                    }
+                                }, 1500);
+                            }
+                        }, 1000);
+                    }
+                }, 300);
+            }
+
+            // --- ПЕРЕЗАПУСК ИГРЫ ---
+            function restartGame() {
+                if (levelTransitionTimeout) {
+                    clearTimeout(levelTransitionTimeout);
+                    levelTransitionTimeout = null;
+                }
+                loadLevel(1);
+            }
+
+            // --- ИНИЦИАЛИЗАЦИЯ ---
+            loadLevel(1);
+
+            // --- СОБЫТИЯ ---
+            restartBtn.addEventListener('click', (e) => { e.preventDefault(); restartGame(); });
+            restartBtn.addEventListener('touchstart', (e) => { e.preventDefault(); restartGame(); }, { passive: false });
+
+            // --- БЛОКИРОВКА СКРОЛЛА ---
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            document.addEventListener('touchmove', (e) => {
+                if (e.target.closest('#game-area')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            window.addEventListener('resize', () => {
+                const balls = document.querySelectorAll('.ball');
+                const maxX = window.innerWidth - 50;
+                const maxY = window.innerHeight - 150;
+                balls.forEach(b => {
+                    let left = parseInt(b.style.left);
+                    let top = parseInt(b.style.top);
+                    if (left > maxX) b.style.left = Math.max(10, maxX - 20) + 'px';
+                    if (top > maxY) b.style.top = Math.max(150, maxY - 20) + 'px';
+                });
+            });
+
+            console.log('🎈 Игра с автоматическим переходом уровней готова!');
+        });
+    </script>
+</body>
+</html>
